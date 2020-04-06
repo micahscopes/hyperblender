@@ -98,6 +98,7 @@ typedef enum ModifierType {
   eModifierType_MeshToVolume = 58,
   eModifierType_VolumeDisplace = 59,
   eModifierType_VolumeToMesh = 60,
+  eModifierType_Moebius = 12345678,
   NUM_MODIFIER_TYPES,
 } ModifierType;
 
@@ -2308,6 +2309,20 @@ typedef enum VolumeToMeshResolutionMode {
 typedef enum VolumeToMeshFlag {
   VOLUME_TO_MESH_USE_SMOOTH_SHADE = 1 << 0,
 } VolumeToMeshFlag;
+
+typedef struct MoebiusModifierData {
+	ModifierData modifier;
+	struct Object *control;
+	struct Object *origin;
+	float norm_power;
+	int flags;
+	
+	char _pad0[8];
+} MoebiusModifierData;
+
+typedef enum MoebiusModifierFlags{
+	eMoebiusModifierFlag_localize = (1<<0)
+} MoebiusModifierFlags;
 
 #ifdef __cplusplus
 }

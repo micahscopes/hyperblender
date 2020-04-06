@@ -42,6 +42,19 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
         layout.operator_menu_enum("object.modifier_add", "type")
         layout.template_modifiers()
 
+    def MOEBIUS(self, layout, ob, md):
+        split = layout.split()
+
+        col = split.column()
+        col.label(text="Control:")
+        col.prop(md, "control", text="")
+        col.label(text="Origin:")
+        col.prop(md, "origin", text="")
+
+        col = split.column()
+        col.label(text="Options:")
+        col.prop(md, "localize", text="Localize Transformed Origin")
+        col.prop(md, "norm_power", text="Norm Power")
 
 class DATA_PT_gpencil_modifiers(ModifierButtonsPanel, Panel):
     bl_label = "Modifiers"
