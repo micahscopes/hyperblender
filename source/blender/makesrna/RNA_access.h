@@ -416,6 +416,7 @@ extern StructRNA RNA_MetaSequence;
 extern StructRNA RNA_MirrorGpencilModifier;
 extern StructRNA RNA_MirrorModifier;
 extern StructRNA RNA_Modifier;
+extern StructRNA RNA_MoebiusModifier;
 extern StructRNA RNA_MotionPath;
 extern StructRNA RNA_MotionPathVert;
 extern StructRNA RNA_MovieClipSequence;
