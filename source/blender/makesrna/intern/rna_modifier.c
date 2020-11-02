@@ -282,8 +282,9 @@ const EnumPropertyItem rna_enum_object_modifier_type_items[] = {
      ICON_VOLUME_DATA,
      "Volume Displace",
      "Deform volume based on noise or other vector fields"}, /* TODO: Use correct icon. */
-    {0, "", 0, N_("Physics"), ""},
+    {0, "", 0, N_("Hyperspace"), ""},
     {eModifierType_Moebius, "MOEBIUS", ICON_MOD_PHYSICS, "Moebius", ""},
+    {eModifierType_SphereReflect, "SPHERE_REFLECT", ICON_MOD_PHYSICS, "Sphere Reflect", ""},
     {0, "", 0, N_("Simulate"), ""},
     {eModifierType_Cloth, "CLOTH", ICON_MOD_CLOTH, "Cloth", ""},
     {eModifierType_Collision, "COLLISION", ICON_MOD_PHYSICS, "Collision", ""},
@@ -7179,6 +7180,22 @@ static void rna_def_modifier_moebius(BlenderRNA *brna)
 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 }
 
+static void rna_def_modifier_sphere_reflect(BlenderRNA *brna)
+{
+	StructRNA *srna;
+	PropertyRNA *prop;
+	 
+	srna= RNA_def_struct(brna, "SphereReflectModifier", "Modifier");
+	RNA_def_struct_ui_text(srna, "Sphere Reflect Modifier", "Spherical reflection");
+	RNA_def_struct_sdna(srna, "SphereReflectModifierData");
+	RNA_def_struct_ui_icon(srna, ICON_MOD_PHYSICS);
+	
+	prop = RNA_def_property(srna, "sphere", PROP_POINTER, PROP_NONE);
+	RNA_def_property_ui_text(prop, "Sphere of reflection", "Object whose sphere is used to calculate spherical reflection.");
+	RNA_def_property_flag(prop, PROP_EDITABLE | PROP_ID_SELF_CHECK);
+	RNA_def_property_update(prop, 0, "rna_Modifier_dependency_update");
+}
+
 void RNA_def_modifier(BlenderRNA *brna)
 {
   StructRNA *srna;
@@ -7314,6 +7331,7 @@ void RNA_def_modifier(BlenderRNA *brna)
   rna_def_modifier_volume_displace(brna);
   rna_def_modifier_volume_to_mesh(brna);
   rna_def_modifier_moebius(brna);
+  rna_def_modifier_sphere_reflect(brna);
 }
 
 #endif

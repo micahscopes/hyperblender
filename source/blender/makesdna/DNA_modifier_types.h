@@ -99,6 +99,7 @@ typedef enum ModifierType {
   eModifierType_VolumeDisplace = 59,
   eModifierType_VolumeToMesh = 60,
   eModifierType_Moebius = 12345678,
+  eModifierType_SphereReflect = 123456789,
   NUM_MODIFIER_TYPES,
 } ModifierType;
 
@@ -2323,6 +2324,19 @@ typedef struct MoebiusModifierData {
 typedef enum MoebiusModifierFlags{
 	eMoebiusModifierFlag_localize = (1<<0)
 } MoebiusModifierFlags;
+
+typedef struct SphereReflectModifierData {
+	ModifierData modifier;
+	struct Object *sphere;
+	int flags;
+	
+	char _pad0[4];
+} SphereReflectModifierData;
+
+/** SphereReflectModifierData->flag */
+typedef enum SphereReflectFlag {
+  SPHERE_REFLECT_MIRROR = 1 << 0,
+} SphereReflectFlag;
 
 #ifdef __cplusplus
 }

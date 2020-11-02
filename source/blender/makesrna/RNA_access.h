@@ -603,6 +603,7 @@ extern StructRNA RNA_Spline;
 extern StructRNA RNA_SplineIKConstraint;
 extern StructRNA RNA_SplinePoint;
 extern StructRNA RNA_SpotLight;
+extern StructRNA RNA_SphereReflectModifier;
 extern StructRNA RNA_Stereo3dDisplay;
 extern StructRNA RNA_StretchToConstraint;
 extern StructRNA RNA_StringAttribute;

@@ -347,5 +347,6 @@ void modifier_type_init(ModifierTypeInfo *types[])
   INIT_TYPE(VolumeDisplace);
   INIT_TYPE(VolumeToMesh);
   INIT_TYPE(Moebius);
+  INIT_TYPE(SphereReflect);
 #undef INIT_TYPE
 }
