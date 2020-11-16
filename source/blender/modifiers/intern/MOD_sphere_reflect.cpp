@@ -53,20 +53,22 @@ auto sphere_of_object(Object *object)
   return sphere;
 }
 
-static void sphere_reflect(Object *sphereObject,
+static void bm_sphere_reflect(Object *sphereObject,
                            Object *target,
-                           float (*vertexCos)[3],
-                           int numVerts)
+                           BMesh *bm)
 {
   auto sphere = sphere_of_object(sphereObject);
   const auto Mnk = ni ^ no;
   int i;
   int j;
   double refCos[3];
-  for (i = 0; i < numVerts; i++) {
-    mul_m4_v3(target->obmat, vertexCos[i]);
+  
+  BMVert *v; 
+  BMIter iter;
+  BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
+    mul_m4_v3(target->obmat, v->co);
     for (j = 0; j < 3; j++)
-      refCos[j] = (double)vertexCos[i][j];
+      refCos[j] = (double)(v->co)[j];
     auto p = point(refCos[0], refCos[1], refCos[2]);
     auto ref = apply_even_versor(sphere, p);
     auto v_ref = -ref / abs(ref | ni);
@@ -74,32 +76,102 @@ static void sphere_reflect(Object *sphereObject,
     refCos[1] = v_ref | e2;
     refCos[2] = v_ref | e3;
     for (j = 0; j < 3; j++)
-      vertexCos[i][j] = (float)refCos[j];
-    // copy_v3_v3(vertexCos[i], refCos);
-    mul_m4_v3(target->imat, vertexCos[i]);
+      (v->co)[j] = (float)refCos[j];
+    mul_m4_v3(target->imat, v->co);
   }
 }
 
-static void deformVerts(ModifierData *md,
-                        const ModifierEvalContext *ctx,
-                        Mesh *mesh,
-                        float (*vertexCos)[3],
-                        int numVerts)
+static Mesh *adaptiveRefine(SphereReflectModifierData *smd,
+                            const ModifierEvalContext *ctx,
+                            Mesh *mesh)
 {
-  SphereReflectModifierData *smd = (SphereReflectModifierData *)md;
-  sphere_reflect(smd->sphere, ctx->object, vertexCos, numVerts);
+  Mesh *result;
+  BMesh *bm;
+  const struct BMeshCreateParams bm_create_params = {
+    .use_toolflags = true,
+  };
+  const struct BMeshFromMeshParams bm_from_mesh_params = {0};
+  bm = BKE_mesh_to_bmesh_ex(mesh, &bm_create_params, &bm_from_mesh_params);
+  
+  BMVert *v; 
+  BMFace *f; 
+  BMEdge *e; 
+  BMIter iter;
+  BMIter fiter;
+  BMIter eiter;
+  float max_distance = 1.0;
+  int num_close_verts = -1;
+  int cuts = 1;
+  int i;
+  float worldCo[3];
+  for(i = 0; i<10; i++) {
+    BM_mesh_elem_hflag_disable_all(bm, BM_EDGE, BM_ELEM_TAG, false);
+    max_distance = 1.0*pow(1.0/(float(cuts) + 1.0), i)/32.0;
+    if(num_close_verts == 0) {
+      break;
+    } else {
+      num_close_verts = 0;
+      BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
+        copy_v3_v3(worldCo, v->co);
+        mul_m4_v3(ctx->object->obmat, worldCo);
+        // printf("distance is %f\n", len_v3v3(worldCo, smd->sphere->obmat[3]));
+        if(len_v3v3(worldCo, smd->sphere->obmat[3]) < max_distance) {
+          num_close_verts += 1;
+          BM_ITER_ELEM(f, &fiter, v, BM_FACES_OF_VERT) {
+            BM_ITER_ELEM(e, &eiter, f, BM_EDGES_OF_FACE) {
+              BM_elem_flag_enable(e, BM_ELEM_TAG);
+            }
+          }
+        }
+      }
+      BMO_op_callf(bm,
+                   BMO_FLAG_DEFAULTS,
+                   "subdivide_edges edges=%he cuts=%i use_grid_fill=%b",
+                   BM_ELEM_TAG,
+                   cuts,
+                   true
+                   );
+    }
+  }
+                 
+  bm_sphere_reflect(smd->sphere, ctx->object, bm);
+  result = BKE_mesh_from_bmesh_for_eval_nomain(bm, NULL, mesh);
+  BM_mesh_free(bm);
+
+  return result;
 }
 
-static void deformVertsEM(ModifierData *md,
-                          const ModifierEvalContext *ctx,
-                          struct BMEditMesh *editData,
-                          Mesh *mesh,
-                          float (*vertexCos)[3],
-                          int numVerts)
+static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mesh)
 {
   SphereReflectModifierData *smd = (SphereReflectModifierData *)md;
-  sphere_reflect(smd->sphere, ctx->object, vertexCos, numVerts);
+  Mesh *result;
+  if (!(result = adaptiveRefine(smd, ctx, mesh))) {
+    return mesh;
+  }
+
+  return result;
 }
+
+// static void deformVerts(ModifierData *md,
+//                         const ModifierEvalContext *ctx,
+//                         Mesh *mesh,
+//                         float (*vertexCos)[3],
+//                         int numVerts)
+// {
+//   SphereReflectModifierData *smd = (SphereReflectModifierData *)md;
+//   sphere_reflect(smd->sphere, ctx->object, vertexCos, numVerts);
+// }
+
+// static void deformVertsEM(ModifierData *md,
+//                           const ModifierEvalContext *ctx,
+//                           struct BMEditMesh *editData,
+//                           Mesh *mesh,
+//                           float (*vertexCos)[3],
+//                           int numVerts)
+// {
+//   SphereReflectModifierData *smd = (SphereReflectModifierData *)md;
+//   sphere_reflect(smd->sphere, ctx->object, vertexCos, numVerts);
+// }
 
 /* SphereReflect Transform */
 static void initData(ModifierData *md)
@@ -162,18 +234,18 @@ ModifierTypeInfo modifierType_SphereReflect = {
     /* structName */ "SphereReflectModifierData",
     /* structSize */ sizeof(SphereReflectModifierData),
     /* srna */ &RNA_SphereReflectModifier,
-    /* type */ eModifierTypeType_OnlyDeform,
+    /* type */ eModifierTypeType_Constructive,
     /* flags */
     ModifierTypeFlag(eModifierTypeFlag_AcceptsMesh | eModifierTypeFlag_SupportsEditmode |
                      eModifierTypeFlag_AcceptsCVs),
     /* icon */ NULL, /* TODO: Use correct icon. */
     /* copyData */ BKE_modifier_copydata_generic,
 
-    /* deformVerts */ deformVerts,
+    /* deformVerts */ NULL,
     /* deformMatrices */ NULL,
-    /* deformVertsEM */ deformVertsEM,
+    /* deformVertsEM */ NULL,
     /* deformMatricesEM */ NULL,
-    /* modifyMesh */ NULL,
+    /* modifyMesh */ modifyMesh,
     /* modifyHair */ NULL,
     /* modifyPointCloud */ NULL,
     /* modifyVolume */ NULL,
