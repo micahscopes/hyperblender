@@ -2328,15 +2328,21 @@ typedef enum MoebiusModifierFlags{
 typedef struct SphereReflectModifierData {
 	ModifierData modifier;
 	struct Object *sphere;
+  float theta;
+  int iterations;
+  int cuts;
+  float falloff;
+
 	int flags;
 	
 	char _pad0[4];
 } SphereReflectModifierData;
 
 /** SphereReflectModifierData->flag */
-typedef enum SphereReflectFlag {
-  SPHERE_REFLECT_MIRROR = 1 << 0,
-} SphereReflectFlag;
+enum {
+  MOD_SPHERE_REFLECT_ADAPTIVE = (1 << 0),
+  MOD_SPHERE_REFLECT_MIRROR = (1 << 1),
+};
 
 #ifdef __cplusplus
 }
